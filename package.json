@@ -3,9 +3,13 @@
   "version": "1.0.0",
   "main": "scrape.js",
   "scripts": {
-    "start": "node scrape.js"
+    "start": "node scrape.js",
+    "postinstall": "npx puppeteer install"
   },
   "dependencies": {
     "puppeteer": "^22.0.0"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

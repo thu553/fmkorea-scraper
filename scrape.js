@@ -5,9 +5,10 @@ const puppeteer = require('puppeteer');
   let deals = [];
 
   try {
+    // DÙNG puppeteer-core hay puppeteer, Render có sẵn Chrome tại /usr/bin/google-chrome
     browser = await puppeteer.launch({
       headless: true,
-      executablePath: '/usr/bin/google-chrome',
+      executablePath: '/usr/bin/google-chrome', // ← ĐIỀU QUAN TRỌNG NHẤT
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -17,8 +18,8 @@ const puppeteer = require('puppeteer');
         '--disable-background-timer-throttling',
         '--disable-renderer-backgrounding',
         '--disable-features=TranslateUI',
-        '--single-process',           // thêm dòng này
-        '--no-zygote'                 // thêm dòng này
+        '--single-process',  // THÊM DÒNG NÀY để tránh crash trên Render
+        '--no-zygote'        // THÊM DÒNG NÀY để chạy mượt trên Linux container
       ]
     });
 
@@ -28,7 +29,7 @@ const puppeteer = require('puppeteer');
     await page.goto('https://www.fmkorea.com/index.php?mid=hotdeal', { 
       waitUntil: 'networkidle2', 
       timeout: 90000 
-    }).catch(() => {});
+    }).catch(() => {}); // bỏ qua lỗi nhỏ
 
     await page.waitForFunction(
       () => document.title && (document.title.includes('핫딜') || document.title.includes('HOTDEAL')),
@@ -89,11 +90,11 @@ const puppeteer = require('puppeteer');
     });
 
   } catch (e) {
-    // Không in ra console nữa
+    // Không in lỗi ra console để tránh spam log Render
   } finally {
     if (browser) await browser.close();
     
-    // QUAN TRỌNG NHẤT: Render.com chỉ nhận output qua stdout
-    process.stdout.write(JSON.stringify(deals.length > 0 ? deals : [], null, 2));
+    // QUAN TRỌNG: Render chỉ nhận output qua stdout, không dùng console.log
+    process.stdout.write(JSON.stringify(deals, null, 2));
   }
 })();
