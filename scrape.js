@@ -9,7 +9,6 @@ const puppeteer = require('puppeteer');
       headless: true,
       args: [
         '--no-sandbox',
-        ',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--single-process',
@@ -20,9 +19,9 @@ const puppeteer = require('puppeteer');
     const page = await browser.newPage();
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
 
-    await page.goto('https://www.fmkorea.com/index.php?mid=hotdeal', { 
-      waitUntil: 'networkidle2', 
-      timeout: 90000 
+    await page.goto('https://www.fmkorea.com/index.php?mid=hotdeal', {
+      waitUntil: 'networkidle2',
+      timeout: 90000
     }).catch(() => {});
 
     await page.waitForFunction(
