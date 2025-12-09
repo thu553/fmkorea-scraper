@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: fmkorea-scraper
+    env: node
+    buildCommand: npm install && npx puppeteer install --platform linux
+    startCommand: node scrape.js
+    envVars:
+      - key: PUPPETEER_CACHE_DIR
+        value: /opt/render/project/src/.cache/puppeteer
+      - key: PUPPETEER_EXECUTABLE_PATH
+        value: /opt/render/project/src/.cache/puppeteer/chrome/linux-*/chrome-linux/chrome
+    plan: free
+    region: oregon
+    ram: 1GB 
+    cpu: 100m
