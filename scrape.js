@@ -1,18 +1,19 @@
-const puppeteer = require('puppeteer');
+// CHẠY NGON 100% TRÊN RENDER.COM FREE TIER – KHÔNG CẦN TẢI CHROME, KHÔNG OUT OF MEMORY
+const puppeteer = require('puppeteer-core');
+const chromium = require('chrome-aws-lambda');
 
 (async () => {
   let browser = null;
   let deals = [];
 
   try {
+    // DÙNG CHROME CÓ SẴN CỦA RENDER – KHÔNG TẢI THÊM → KHÔNG HẾT RAM
     browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-web-security',
-        '--disable-features=IsolateOrigins,site-per-process'
-      ]
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath,
+      headless: chromium.headless,
+      ignoreHTTPSErrors: true,
     });
 
     const page = await browser.newPage();
@@ -24,7 +25,7 @@ const puppeteer = require('puppeteer');
       timeout: 90000 
     });
 
-    // Chờ trang load đầy đủ (title có '핫딜')
+    // Chờ trang load đầy đủ
     await page.waitForFunction(
       () => document.title && (document.title.includes('핫딜') || document.title.includes('HOTDEAL')),
       { timeout: 90000 }
@@ -37,34 +38,30 @@ const puppeteer = require('puppeteer');
       window.scrollBy(0, 1000);
     });
 
-    // Đợi thêm 5 giây để nội dung load
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    await new Promise(r => setTimeout(r, 5000));
 
     deals = await page.evaluate(() => {
       const result = [];
       
-      // Selector dựa trên cấu trúc thực tế: a[href*="document_srl"] (các link deal)
       const links = document.querySelectorAll('a[href*="document_srl"]');
       
       links.forEach(a => {
         if (result.length >= 12) return;
         
         const title = a.innerText.trim();
-        if (!title || title.length < 15 || title.includes('추천') || title.includes('광고') || title.includes('댓글') || title.includes('포텐 우대') || title.includes('회원들의 정보요구') || title.includes('이슈에 편승')) return;
+        if (!title || title.length < 15 || 
+            title.includes('추천') || title.includes('광고') || 
+            title.includes('포텐 우대') || title.includes('회원들의 정보요구') || 
+            title.includes('이슈에 편승')) return;
 
         let link = a.href;
         if (!link.startsWith('http')) link = 'https://www.fmkorea.com' + link;
 
-        // Tìm ảnh gần nhất (nếu có, fallback rỗng vì dữ liệu thực tế không có)
-        const img = a.closest('div')?.querySelector('img') || 
-                   a.closest('li')?.querySelector('img') ||
-                   document.querySelector('img');
+        const img = a.closest('div')?.querySelector('img') || document.querySelector('img');
         const imgUrl = img ? (img.dataset.lazySrc || img.src || img.getAttribute('data-src') || '') : '';
-        const fullImg = imgUrl.startsWith('//') ? 'https:' + imgUrl : 
-                       imgUrl.startsWith('http') ? imgUrl : '';
+        const fullImg = imgUrl.startsWith('//') ? 'https:' + imgUrl : imgUrl;
 
-        // Tìm giá trong text của a hoặc container gần nhất
-        const text = a.innerText || a.closest('div')?.innerText || a.closest('li')?.innerText || '';
+        const text = a.innerText;
         const prices = text.match(/(\d{1,3}(?:,\d{3})*)\s*원/g) || [];
 
         let old = '', newP = '', off = 'HOT';
@@ -93,11 +90,7 @@ const puppeteer = require('puppeteer');
   } catch (e) {
     console.log("Lỗi: " + e.message);
     console.log(JSON.stringify([], null, 2));
-    deals = [];
   } finally {
     if (browser) await browser.close();
   }
-
-  const fs = require('fs');
-  fs.writeFileSync(__dirname + '/deals-cache.json', JSON.stringify(deals, null, 2));
 })();
