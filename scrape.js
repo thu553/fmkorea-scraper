@@ -5,10 +5,9 @@ const puppeteer = require('puppeteer');
   let deals = [];
 
   try {
-    // DÙNG puppeteer-core hay puppeteer, Render có sẵn Chrome tại /usr/bin/google-chrome
     browser = await puppeteer.launch({
       headless: true,
-      executablePath: '/usr/bin/google-chrome', // ← ĐIỀU QUAN TRỌNG NHẤT
+      executablePath: '/usr/bin/google-chrome',
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -17,23 +16,24 @@ const puppeteer = require('puppeteer');
         '--disable-features=IsolateOrigins,site-per-process',
         '--disable-background-timer-throttling',
         '--disable-renderer-backgrounding',
-        '--disable-features=TranslateUI'
+        '--disable-features=TranslateUI',
+        '--single-process',           // thêm dòng này
+        '--no-zygote'                 // thêm dòng này
       ]
     });
 
     const page = await browser.newPage();
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
 
-    console.log('Đang vào FMKorea...');
     await page.goto('https://www.fmkorea.com/index.php?mid=hotdeal', { 
       waitUntil: 'networkidle2', 
       timeout: 90000 
-    }).catch(() => {}); // bỏ qua lỗi nhỏ
+    }).catch(() => {});
 
     await page.waitForFunction(
       () => document.title && (document.title.includes('핫딜') || document.title.includes('HOTDEAL')),
       { timeout: 90000 }
-    ).catch(() => console.log('Title không có, nhưng vẫn tiếp tục...'));
+    ).catch(() => {});
 
     await page.evaluate(() => {
       const cf = document.querySelector('#cf-wrapper, .cf-browser-verification');
@@ -88,11 +88,12 @@ const puppeteer = require('puppeteer');
       return result;
     });
 
-    console.log(JSON.stringify(deals, null, 2));
   } catch (e) {
-    console.log("Lỗi: " + e.message);
-    console.log(JSON.stringify([], null, 2));
+    // Không in ra console nữa
   } finally {
     if (browser) await browser.close();
+    
+    // QUAN TRỌNG NHẤT: Render.com chỉ nhận output qua stdout
+    process.stdout.write(JSON.stringify(deals.length > 0 ? deals : [], null, 2));
   }
 })();
