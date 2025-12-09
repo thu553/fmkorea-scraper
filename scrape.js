@@ -7,16 +7,12 @@ const puppeteer = require('puppeteer');
   try {
     browser = await puppeteer.launch({
       headless: true,
-      executablePath: '/usr/bin/google-chrome',
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-web-security',
         '--disable-features=IsolateOrigins,site-per-process',
-        '--disable-background-timer-throttling',
-        '--disable-renderer-backgrounding',
-        '--disable-features=TranslateUI',
         '--single-process',
         '--no-zygote'
       ]
@@ -91,7 +87,6 @@ const puppeteer = require('puppeteer');
   } catch (e) {
   } finally {
     if (browser) await browser.close();
-
     process.stdout.write(JSON.stringify(deals, null, 2));
   }
 })();
