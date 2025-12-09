@@ -1,19 +1,24 @@
-// CHẠY NGON 100% TRÊN RENDER.COM FREE TIER – KHÔNG CẦN TẢI CHROME, KHÔNG OUT OF MEMORY
-const puppeteer = require('puppeteer-core');
-const chromium = require('chrome-aws-lambda');
+const puppeteer = require('puppeteer');
 
 (async () => {
   let browser = null;
   let deals = [];
 
   try {
-    // DÙNG CHROME CÓ SẴN CỦA RENDER – KHÔNG TẢI THÊM → KHÔNG HẾT RAM
+    // DÙNG puppeteer-core hay puppeteer, Render có sẵn Chrome tại /usr/bin/google-chrome
     browser = await puppeteer.launch({
-      args: chromium.args,
-      defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath,
-      headless: chromium.headless,
-      ignoreHTTPSErrors: true,
+      headless: true,
+      executablePath: '/usr/bin/google-chrome', // ← ĐIỀU QUAN TRỌNG NHẤT
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-web-security',
+        '--disable-features=IsolateOrigins,site-per-process',
+        '--disable-background-timer-throttling',
+        '--disable-renderer-backgrounding',
+        '--disable-features=TranslateUI'
+      ]
     });
 
     const page = await browser.newPage();
@@ -23,15 +28,13 @@ const chromium = require('chrome-aws-lambda');
     await page.goto('https://www.fmkorea.com/index.php?mid=hotdeal', { 
       waitUntil: 'networkidle2', 
       timeout: 90000 
-    });
+    }).catch(() => {}); // bỏ qua lỗi nhỏ
 
-    // Chờ trang load đầy đủ
     await page.waitForFunction(
       () => document.title && (document.title.includes('핫딜') || document.title.includes('HOTDEAL')),
       { timeout: 90000 }
-    );
+    ).catch(() => console.log('Title không có, nhưng vẫn tiếp tục...'));
 
-    // Bỏ qua Cloudflare nếu có
     await page.evaluate(() => {
       const cf = document.querySelector('#cf-wrapper, .cf-browser-verification');
       if (cf) cf.remove();
@@ -42,7 +45,6 @@ const chromium = require('chrome-aws-lambda');
 
     deals = await page.evaluate(() => {
       const result = [];
-      
       const links = document.querySelectorAll('a[href*="document_srl"]');
       
       links.forEach(a => {
