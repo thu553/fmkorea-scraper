@@ -4,10 +4,10 @@
   "main": "scrape.js",
   "scripts": {
     "start": "node scrape.js",
-    "postinstall": "npx puppeteer install"
+    "postinstall": "npx puppeteer install --platform linux"
   },
   "dependencies": {
-    "puppeteer": "^22.0.0"
+    "puppeteer-core": "^22.0.0"
   },
   "engines": {
     "node": ">=18"
